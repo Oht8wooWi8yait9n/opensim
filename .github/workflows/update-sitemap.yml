@@ -37,7 +37,14 @@ jobs:
           git config user.email "aaron.b.sells@nasa.gov"
           git add opensim_sitemap.xml opensim_urls.txt
           if git diff --staged --quiet; then
-            echo "No changes in OpenSim sitemap. Skipping commit."
+            DAYS_SINCE_COMMIT=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+            if [ "$DAYS_SINCE_COMMIT" -ge 45 ]; then
+              echo "No changes in OpenSim sitemap, but last commit was ${DAYS_SINCE_COMMIT} days ago (>= 45d). Pushing empty keepalive commit."
+              git commit --allow-empty -m "chore(ci): 45-day keepalive to prevent GitHub Actions 60-day schedule auto-disable [skip ci]"
+              git push origin main
+            else
+              echo "No changes in OpenSim sitemap (last commit ${DAYS_SINCE_COMMIT}d ago). Skipping commit."
+            fi
           else
             git commit -m "chore(sitemap): weekly automated OpenSim documentation synchronization [skip ci]"
             git push origin main
